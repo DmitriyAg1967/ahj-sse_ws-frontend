@@ -1,5 +1,10 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-console */
+
+import onPopupSubmit from './onpopupsubmit';
+import onChatSubmit from './onchatsubmit';
+import onMessage from './onmessage';
+
 export default class Chat {
   constructor(element) {
     if (typeof element === 'string') {
@@ -16,93 +21,15 @@ export default class Chat {
     this.listUsers = document.querySelector('.users__list');
     this.listMessages = document.querySelector('.messages__list');
 
-    this.onMessage = this.onMessage.bind(this);
-    this.onPopupSubmit = this.onPopupSubmit.bind(this);
-    this.onChatSubmit = this.onChatSubmit.bind(this);
+    this.onMessage = onMessage.bind(this);
+    this.onPopupSubmit = onPopupSubmit.bind(this);
+    this.onChatSubmit = onChatSubmit.bind(this);
   }
 
   init() {
     this.popupForm.addEventListener('submit', this.onPopupSubmit);
     this.chatForm.addEventListener('submit', this.onChatSubmit);
     this.popupInput.focus();
-  }
-
-  onPopupSubmit(evt) {
-    evt.preventDefault();
-    if (this.popupInput.validity.valid) {
-      this.popupInput.className = 'popup__input';
-      this.popupInput.placeholder = 'Введите псевдоним';
-      this.user = this.popupInput.value;
-      console.log(this.user);
-      this.ws = new WebSocket(this.baseURL);
-      this.ws.binaryType = 'blob';
-
-      this.ws.addEventListener('open', () => {
-        const data = JSON.stringify({ type: 'registration', name: this.user });
-        this.ws.send(data);
-        console.log('connected');
-      });
-
-      this.ws.addEventListener('close', (e) => {
-        console.log('connection closed', e);
-      });
-
-      this.ws.addEventListener('error', (e) => {
-        console.log('error:', e);
-      });
-
-      this.ws.addEventListener('message', this.onMessage);
-    } else {
-      this.changePlaceholder('Заполните пожалуйста это поле');
-    }
-  }
-
-  onChatSubmit(evt) {
-    evt.preventDefault();
-    if (this.chatInput.value !== '') {
-      const data = JSON.stringify({
-        type: 'message',
-        content: this.chatInput.value,
-        name: this.user,
-      });
-      this.ws.send(data);
-      this.chatInput.value = '';
-      console.log('Сообщение отправлено');
-    }
-  }
-
-  onMessage(e) {
-    const data = JSON.parse(e.data);
-    if (data.type === 'registration') {
-      if (data.success) {
-        this.popupInput.value = '';
-        this.hidePopup();
-        this.chatInput.focus();
-        this.drawListUsers(data.activeUsers);
-        this.drawListMessages(data.messages);
-      } else if (!data.error) {
-        this.changePlaceholder('Это имя уже занято');
-      } else {
-        this.changePlaceholder('Ошибка сервера');
-        console.log(data.error);
-      }
-    }
-    if (data.type === 'message') {
-      if (data.success) {
-        this.drawListMessages(data.messages);
-      } else {
-        this.showError();
-        console.log(data.error);
-      }
-    }
-    if (data.type === 'update') {
-      if (data.success) {
-        this.drawListUsers(data.activeUsers);
-      } else {
-        this.showError();
-        console.log(data.error);
-      }
-    }
   }
 
   showError() {
